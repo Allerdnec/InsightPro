@@ -1,0 +1,86 @@
+---
+title: "Script Insight Pro software"
+author: "Cendrella Lepleux-Cichocki"
+output:
+  html_document:
+    fig_caption: yes
+    toc: yes
+  html_notebook: default
+editor_options: 
+  chunk_output_type: inline
+---
+
+This is an R notebook depicting a code to treat the data obtained from the software InSight pro. After the code the data is rearanged and more reader-friendly.
+
+N.B: the data from the InSight Pro software is firstly rearanged as to have each measure next to each other (see the example.xlsx).
+
+```{r libraries}
+
+library(tidyxl)
+library(readxl)
+library(plyr)
+library(dplyr)
+library(reshape)
+library(reshape2)
+library(unpivotr)
+library(stringr)
+library(tidyr)
+library(forcats)
+library(ggplot2)
+library(purrr)
+
+```
+
+
+```{r load data}
+
+path <- "example.xlsx" # path or file name
+P <-
+  xlsx_cells(path, include_blank_cells = FALSE) %>% #if needed for specific sheet: xlsx_cells(path, sheets = "P5")
+  #dplyr::filter(!is_blank) %>%
+  select(row, col, data_type, character, numeric, local_format_id)
+head(P)
+
+```
+
+```{r data organisation}
+
+
+ P <-
+ P %>%
+  behead("NNW", Measure) %>%
+  behead("N", header) %>%
+  select(-col, -local_format_id) %>%
+  spatter(header) %>%
+  select(-row)
+head(P)
+ 
+```
+
+
+```{r Data manipulation1}
+
+colnames(P) <- gsub(" ", "_", colnames(P))
+
+P_split <- split(P, P$Measure)
+P_split <- lapply(P_split, function(x) split(x, x$Class_Name))
+P_split <- lapply(P_split, function(x) bind_cols(x))
+P_split <- do.call(rbind.data.frame, P_split)
+
+P_split[, c(2:4, 7:9, 11:15, 17:18)] <- NULL
+
+colnames(P_split) <- c("Measure", "Location_X(µm)", "Location_Y(µm)", "Lenght(µm)", "Width(µm)")
+head(P_split)
+
+write.table(P_split, "example.txt", sep = "\t", row.names = FALSE)
+
+
+```
+
+
+
+
+
+
+
+
